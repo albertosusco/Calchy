@@ -1,0 +1,17 @@
+[Desktop Entry]
+Type=Application
+Name={{name}}
+Comment={{comment}}
+Exec={{exec}}
+Icon={{icon}}
+Terminal=false
+Categories=Utility;Calculator;
+Keywords=calc;calcolatrice;calcoli;note;post-it;numi;
+StartupWMClass={{exec}}
+StartupNotify=true
+SingleMainWindow=true
+Actions=quit;
+
+[Desktop Action quit]
+Name=Esci da Calchy
+Exec={{exec}} --quit

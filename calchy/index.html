@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Calchy</title>
+    <link rel="stylesheet" href="/src/styles.css" />
+    <script type="module" src="/src/main.js"></script>
+  </head>
+  <body>
+    <div id="app">
+      <header id="titlebar" data-tauri-drag-region>
+        <nav id="tabs">
+          <button class="tab active" data-tab="calc" title="Calcoli (Ctrl+1)">Calcoli</button>
+          <button class="tab" data-tab="notes" title="Note (Ctrl+2)">Note</button>
+        </nav>
+        <div class="spacer" data-tauri-drag-region></div>
+        <button id="pin" class="icon-btn" title="Sempre in primo piano" aria-pressed="false">
+          <svg viewBox="0 0 16 16"><path d="M9.8 1.5 14.5 6.2l-1.4.7-2.3 2.3.4 3.3-1.2 1.2-2.8-2.8-3.5 3.5-.7-.7 3.5-3.5L3.7 7.4l1.2-1.2 3.3.4 2.3-2.3z"/></svg>
+        </button>
+        <button id="settings-btn" class="icon-btn" title="Impostazioni">
+          <svg viewBox="0 0 16 16"><path d="M7 1h2l.4 1.9 1.3.6 1.7-1 1.4 1.4-1 1.7.6 1.3L15 7v2l-1.9.4-.6 1.3 1 1.7-1.4 1.4-1.7-1-1.3.6L9 15H7l-.4-1.9-1.3-.6-1.7 1-1.4-1.4 1-1.7-.6-1.3L1 9V7l1.9-.4.6-1.3-1-1.7 1.4-1.4 1.7 1 1.3-.6zm1 4.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5"/></svg>
+        </button>
+        <button id="close" class="icon-btn" title="Nascondi (Esc)">
+          <svg viewBox="0 0 16 16"><path d="m4.2 3.5 3.8 3.8 3.8-3.8.7.7L8.7 8l3.8 3.8-.7.7L8 8.7l-3.8 3.8-.7-.7L7.3 8 3.5 4.2z"/></svg>
+        </button>
+      </header>
+
+      <main>
+        <!-- Tab 1: calcoli -->
+        <section id="calc-view" class="view active">
+          <div id="gutter" title="Clic per inserire il richiamo nel testo"></div>
+          <div id="editor-wrap">
+            <div id="backdrop" aria-hidden="true"></div>
+            <textarea id="editor" spellcheck="false"
+              placeholder="Scrivi qui… testo o calcoli&#10;&#10;20 _mele_ + 30 _pere_&#10;@1 * 2&#10;totale"></textarea>
+          </div>
+          <div id="results" title="Clic su un risultato per copiarlo"></div>
+        </section>
+
+        <!-- Tab 2: note in markdown -->
+        <section id="notes-view" class="view">
+          <article id="md-preview" class="markdown"></article>
+          <textarea id="md-editor" spellcheck="false" hidden
+            placeholder="# Titolo&#10;Testo in **markdown**, con richiami ai calcoli: @1"></textarea>
+          <button id="md-toggle" title="Modifica / Anteprima (Ctrl+E)">Modifica</button>
+        </section>
+      </main>
+
+      <!-- Impostazioni -->
+      <div id="settings" hidden>
+        <div class="panel">
+          <h2>Impostazioni</h2>
+          <div class="presets"></div>
+          <label>Sfondo <input type="color" data-color="bg" /></label>
+          <label>Testo <input type="color" data-color="text" /></label>
+          <label>Accento calcoli <input type="color" data-color="calc" /></label>
+          <label>Accento risultati <input type="color" data-color="result" /></label>
+          <div class="field">
+            <span>Notazione numeri</span>
+            <div class="segmented" id="notation">
+              <button data-notation="eu" title="Europea: punto per le migliaia, virgola per i decimali">1.234,56</button>
+              <button data-notation="en" title="Anglosassone: virgola per le migliaia, punto per i decimali">1,234.56</button>
+            </div>
+          </div>
+          <label class="check">
+            <input type="checkbox" id="native-wayland" />
+            <span>Wayland nativo<small>Testo più nitido con lo zoom, ma GNOME non permette "sempre in primo piano". Richiede il riavvio di Calchy (Ctrl+Q).</small></span>
+          </label>
+          <div class="actions">
+            <button id="reset-colors">Colori predefiniti</button>
+            <button id="settings-close" class="primary">Fatto</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="toast" role="status"></div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,293 @@
+/* I colori principali si cambiano dalle Impostazioni: main.js aggiorna queste variabili */
+:root {
+  --bg: #1e1f26;
+  --text: #e8e8ea;      /* righe di testo */
+  --calc: #e0b03b;      /* righe di calcolo: giallo senape */
+  --result: #4f83a6;    /* risultati e richiami: azzurro caldo */
+  /* derivati (ricalcolati da main.js) */
+  --bar: #2b2d37;
+  --line: #3a3c46;
+  --border: #6b5b33;
+  --muted: #8a8d99;
+  --hover: #383a46;
+
+  --font-size: 15px;
+  --line-height: 1.7;
+  --row: calc(var(--font-size) * var(--line-height));
+  --mono: "JetBrains Mono", "Fira Code", "Source Code Pro", "Adwaita Mono", monospace;
+  --sans: "Adwaita Sans", "Inter", "Cantarell", system-ui, sans-serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body { height: 100%; background: var(--bg); overflow: hidden; }
+
+body {
+  font-family: var(--mono);
+  color: var(--text);
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Bordo attorno a tutta l'app, così si stacca dalle finestre sullo sfondo */
+#app {
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+}
+
+/* ---------- Barra superiore ---------- */
+#titlebar {
+  flex: none;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 4px 0 6px;
+  background: var(--bar);
+  border-bottom: 1px solid var(--line);
+}
+#titlebar .spacer { flex: 1; align-self: stretch; }
+
+#tabs { display: flex; gap: 2px; }
+.tab {
+  font: 600 12px var(--sans);
+  letter-spacing: 0.02em;
+  color: var(--muted);
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+.tab:hover { background: var(--hover); color: var(--text); }
+.tab.active { background: var(--hover); color: var(--calc); }
+
+.icon-btn {
+  width: 26px; height: 26px;
+  display: grid; place-items: center;
+  border: none; border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.icon-btn svg { width: 14px; height: 14px; fill: currentColor; }
+.icon-btn:hover { background: var(--hover); color: var(--text); }
+.icon-btn[aria-pressed="true"] { color: var(--calc); background: var(--hover); }
+.icon-btn:disabled { opacity: 0.35; cursor: default; }
+#close:hover { background: #c0392b; color: #fff; }
+
+main { flex: 1; min-height: 0; position: relative; }
+.view { position: absolute; inset: 0; display: none; }
+.view.active { display: flex; }
+
+/* ---------- Tab Calcoli ---------- */
+#editor, #backdrop, #results, #gutter {
+  padding: 16px 0;
+  font: inherit;
+  font-size: var(--font-size);
+  line-height: var(--line-height);
+  white-space: pre;
+  tab-size: 2;
+}
+#editor, #backdrop { padding-left: 10px; padding-right: 14px; }
+
+#gutter {
+  flex: none;
+  min-width: 38px;
+  padding-left: 8px;
+  padding-right: 4px;
+  text-align: right;
+  color: var(--muted);
+  font-size: calc(var(--font-size) * 0.75);
+  overflow: hidden;
+  border-right: 1px solid var(--line);
+}
+/* il gutter ha un carattere più piccolo: le righe restano alte quanto quelle del testo */
+#gutter div { height: var(--row); line-height: var(--row); }
+#gutter div[data-ref] { cursor: pointer; }
+#gutter div[data-ref]:hover { color: var(--result); }
+
+#editor-wrap { flex: 1; position: relative; min-width: 0; }
+#editor, #backdrop {
+  position: absolute; inset: 0; overflow: auto;
+  /* le righe lunghe vanno a capo invece di finire sotto i risultati */
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+/* niente barra di scorrimento: così testo e livello colorato hanno la stessa larghezza
+   e vanno a capo esattamente negli stessi punti (si scorre con la rotella) */
+#editor::-webkit-scrollbar, #backdrop::-webkit-scrollbar { width: 0; height: 0; }
+
+#backdrop { color: var(--text); overflow: hidden; }
+#backdrop .calc { color: var(--calc); }
+#backdrop .note { color: var(--muted); }
+#backdrop .ref { color: var(--result); font-weight: 700; }
+
+/* Il testo vero della textarea è invisibile: si vede il "fantasma" colorato dietro */
+#editor {
+  border: none; outline: none; resize: none;
+  background: transparent;
+  color: transparent;
+  caret-color: var(--calc);
+  -webkit-user-select: text;
+  user-select: text;
+}
+#editor::placeholder { color: var(--muted); }
+#editor::selection { background: color-mix(in srgb, var(--calc) 25%, transparent); color: transparent; }
+
+#results {
+  flex: none;
+  min-width: 110px;
+  max-width: 45%;
+  padding-left: 14px;
+  padding-right: 14px;
+  color: var(--result);
+  font-weight: 700;
+  text-align: right;
+  overflow: hidden;
+  border-left: 1px solid var(--line);
+}
+
+/* una riga lunga può occupare più righe a schermo: l'altezza di risultati e margine
+   viene copiata da main.js su quella della riga di testo corrispondente */
+#backdrop div { min-height: var(--row); }
+#results div { height: var(--row); }
+#results div[data-copy] { cursor: pointer; }
+#results div[data-copy]:hover { filter: brightness(1.3); }
+
+/* ---------- Tab Note (markdown) ---------- */
+#notes-view { flex-direction: column; }
+#md-preview, #md-editor {
+  flex: 1;
+  overflow: auto;
+  padding: 18px 20px 56px;
+}
+#md-editor {
+  border: none; outline: none; resize: none;
+  background: var(--bg);
+  color: var(--text);
+  caret-color: var(--calc);
+  font: inherit;
+  font-size: var(--font-size);
+  line-height: var(--line-height);
+  -webkit-user-select: text;
+  user-select: text;
+}
+#md-editor::placeholder { color: var(--muted); }
+
+.markdown {
+  font-family: var(--sans);
+  font-size: var(--font-size);
+  line-height: 1.6;
+  color: var(--text);
+  cursor: text;
+  -webkit-user-select: text;
+  user-select: text;
+}
+.markdown > * + * { margin-top: 0.7em; }
+.markdown h1, .markdown h2, .markdown h3 { color: var(--calc); line-height: 1.25; }
+.markdown h1 { font-size: 1.6em; }
+.markdown h2 { font-size: 1.3em; }
+.markdown h3 { font-size: 1.1em; }
+.markdown ul, .markdown ol { padding-left: 1.4em; }
+.markdown li + li { margin-top: 0.2em; }
+.markdown a { color: var(--result); }
+.markdown code {
+  font-family: var(--mono); font-size: 0.9em;
+  background: var(--bar); padding: 1px 5px; border-radius: 4px;
+}
+.markdown pre { background: var(--bar); padding: 10px 12px; border-radius: 6px; overflow: auto; }
+.markdown pre code { background: none; padding: 0; }
+.markdown blockquote { border-left: 3px solid var(--calc); padding-left: 12px; color: var(--muted); }
+.markdown hr { border: none; border-top: 1px solid var(--line); }
+.markdown table { border-collapse: collapse; }
+.markdown th, .markdown td { border: 1px solid var(--line); padding: 4px 10px; }
+.markdown .ref { color: var(--result); font-weight: 700; font-family: var(--mono); }
+.markdown .ref.missing { color: #c0392b; }
+.markdown .empty { color: var(--muted); font-style: italic; }
+
+#md-toggle {
+  position: absolute; right: 14px; bottom: 12px;
+  font: 600 12px var(--sans);
+  padding: 6px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--bar);
+  color: var(--text);
+  cursor: pointer;
+}
+#md-toggle:hover { border-color: var(--calc); color: var(--calc); }
+
+/* ---------- Impostazioni ---------- */
+#settings {
+  position: absolute; inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: grid; place-items: center;
+  z-index: 10;
+}
+#settings[hidden] { display: none; }
+.panel {
+  width: min(320px, calc(100% - 32px));
+  background: var(--bar);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 18px;
+  font-family: var(--sans);
+  font-size: 13px;
+  display: flex; flex-direction: column; gap: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+.panel h2 { font-size: 15px; color: var(--calc); }
+.panel label { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.panel input[type="color"] {
+  width: 44px; height: 26px; padding: 0;
+  border: 1px solid var(--line); border-radius: 6px;
+  background: none; cursor: pointer;
+}
+.panel .check { justify-content: flex-start; align-items: flex-start; }
+.panel .check input { margin-top: 3px; }
+.panel small { display: block; color: var(--muted); font-size: 11px; margin-top: 2px; }
+.field { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.segmented { display: flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.segmented button {
+  font: 600 11px var(--mono);
+  padding: 5px 8px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.segmented button + button { border-left: 1px solid var(--line); }
+.segmented button.active { background: var(--calc); color: var(--bg); }
+.presets { display: flex; gap: 8px; flex-wrap: wrap; }
+.preset {
+  flex: 1;
+  font: 600 11px var(--sans);
+  padding: 6px 4px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  cursor: pointer;
+}
+.actions { display: flex; justify-content: space-between; gap: 8px; margin-top: 4px; }
+.actions button {
+  font: 600 12px var(--sans);
+  padding: 6px 12px; border-radius: 6px;
+  border: 1px solid var(--line);
+  background: transparent; color: var(--text); cursor: pointer;
+}
+.actions button.primary { background: var(--calc); border-color: var(--calc); color: var(--bg); }
+
+#toast {
+  position: absolute; bottom: 14px; left: 50%;
+  transform: translateX(-50%) translateY(8px);
+  padding: 4px 12px; border-radius: 12px;
+  background: var(--bar); border: 1px solid var(--line);
+  color: var(--text); font: 12px var(--sans);
+  opacity: 0; transition: opacity 0.15s, transform 0.15s;
+  pointer-events: none;
+  z-index: 20;
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }

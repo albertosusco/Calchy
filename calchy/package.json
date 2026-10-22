@@ -1,0 +1,23 @@
+{
+  "name": "calchy",
+  "private": true,
+  "version": "1.2.1",
+  "type": "module",
+  "description": "Calcolatrice testuale per Linux, ispirata a Numi",
+  "license": "MIT",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "tauri": "tauri",
+    "test": "node tests/engine.test.js"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.12.4",
+    "marked": "^18.1.1",
+    "mathjs": "^15.2.0"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.12.4",
+    "vite": "^8.3.5"
+  }
+}
