@@ -15,6 +15,9 @@ const mdToggle = $("md-toggle");
 // aperta in un browser normale (npm run dev) si usa localStorage.
 // ---------------------------------------------------------------------------
 const inTauri = "__TAURI_INTERNALS__" in window;
+// Su Android niente finestra da spostare, "sempre in primo piano" o scorciatoie globali
+const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
+if (isMobile) document.documentElement.classList.add("mobile");
 const core = inTauri ? await import("@tauri-apps/api/core") : null;
 const win = inTauri ? (await import("@tauri-apps/api/window")).getCurrentWindow() : null;
 
@@ -45,7 +48,7 @@ const PRESETS = {
 };
 const DEFAULTS = {
   colors: { ...PRESETS.Notte },
-  fontSize: 15,
+  fontSize: isMobile ? 16 : 15,
   alwaysOnTop: false,
   nativeWayland: false,
   notation: "eu", // "eu" = 1.234,56 · "en" = 1,234.56
@@ -250,10 +253,10 @@ function showTab(tab) {
   $("notes-view").classList.toggle("active", tab === "notes");
   if (tab === "notes") {
     renderNotes(); // i richiami potrebbero essere cambiati
-    if (mdEditor.hidden) mdPreview.focus(); else mdEditor.focus();
+    if (!mdEditor.hidden) mdEditor.focus();
   } else {
     alignRows();
-    editor.focus();
+    if (!isMobile) editor.focus();
   }
 }
 
@@ -384,10 +387,17 @@ results.addEventListener("click", async (e) => {
   if (!value) return;
   try {
     await navigator.clipboard.writeText(value);
-    showToast(`Copiato: ${value}`);
   } catch {
-    showToast("Impossibile copiare");
+    // alcune WebView Android non permettono l'API moderna: metodo classico
+    const tmp = document.createElement("textarea");
+    tmp.value = value;
+    document.body.append(tmp);
+    tmp.select();
+    const ok = document.execCommand("copy");
+    tmp.remove();
+    if (!ok) return showToast("Impossibile copiare");
   }
+  showToast(`Copiato: ${value}`);
 });
 // Clic su @N nel margine: inserisce il richiamo dove si trova il cursore
 gutter.addEventListener("mousedown", (e) => e.preventDefault());
@@ -418,7 +428,12 @@ window.addEventListener("keydown", (e) => {
 });
 
 // Quando la finestra torna visibile, rimetti il cursore nel testo
-document.addEventListener("visibilitychange", () => { if (!document.hidden) focusActive(); });
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) saveAll(); // su Android l'app può essere chiusa dal sistema mentre è in background
+  else if (!isMobile) focusActive(); // sul telefono non apriamo la tastiera da soli
+});
+$("font-down").addEventListener("click", () => setFontSize(settings.fontSize - 1));
+$("font-up").addEventListener("click", () => setFontSize(settings.fontSize + 1));
 
 // ---------------------------------------------------------------------------
 // Avvio

@@ -1,0 +1,9 @@
+node_modules/
+dist/
+src-tauri/target/
+src-tauri/gen/
+*.log
+# chiavi di firma Android: mai su GitHub
+*.jks
+*.keystore
+*.b64

@@ -5,7 +5,7 @@
 <h1 align="center">Calchy</h1>
 
 <p align="center">
-  Un blocco note infinito che fa i calcoli, per Linux e GNOME.<br>
+  Un blocco note infinito che fa i calcoli, per Linux (GNOME) e Android.<br>
   Ispirato a <a href="https://github.com/nikolaeu/numi">Numi</a>, pensato per chi scrive i numeri all'italiana.
 </p>
 
@@ -34,7 +34,14 @@ Tutto viene salvato automaticamente, ogni volta che premi un tasto.
 
 ## Installazione
 
-Calchy è distribuita come pacchetto RPM per **Fedora** (testata su Fedora 44 con GNOME 50).
+Ogni release contiene due file:
+
+| File | Per |
+|---|---|
+| `Calchy-x.y.z-1.x86_64.rpm` | Fedora (testata su Fedora 44 con GNOME 50) |
+| `Calchy-x.y.z-android.apk` | telefoni Android 8 o successivi (64 bit) |
+
+### Fedora
 
 1. Scarica l'ultimo file `Calchy-x.y.z-1.x86_64.rpm` dalla pagina [**Releases**](../../releases/latest).
 2. Apri il terminale nella cartella dove l'hai scaricato e installalo:
@@ -72,6 +79,23 @@ rm ~/.config/autostart/calchy.desktop
 ```
 
 I tuoi testi restano in `~/.local/share/io.github.calchy/`: cancella quella cartella solo se vuoi eliminarli davvero.
+
+---
+
+### Android
+
+<img src="docs/android.png" width="200" align="right" alt="Calchy su Android">
+
+1. Dal telefono apri la pagina [**Releases**](../../releases/latest) e scarica `Calchy-x.y.z-android.apk`.
+2. Apri il file scaricato (dalla notifica o dall'app *File*).
+3. La prima volta Android chiede di **consentire l'installazione da questa fonte**: tocca *Impostazioni*, attiva l'interruttore per il browser e torna indietro.
+4. Tocca **Installa**. Se compare un avviso di Play Protect, tocca *Installa comunque*: l'app non viene dal Play Store, quindi Google non la conosce.
+
+Per aggiornare basta installare il nuovo APK sopra il vecchio: i dati restano.
+
+Su Android non ci sono il pulsante "sempre in primo piano", la ✕ e le scorciatoie da tastiera; tutto il resto funziona come su Linux. I dati del telefono sono separati da quelli del computer.
+
+<br clear="right">
 
 ---
 
@@ -237,14 +261,17 @@ Calchy è costruita con [Tauri 2](https://tauri.app) (Rust + WebKitGTK) e [math.
 sudo dnf install -y git nodejs npm rust cargo gcc \
   webkit2gtk4.1-devel gtk3-devel librsvg2-devel openssl-devel
 
-git clone https://github.com/TUONOME/calchy.git
-cd calchy
+git clone https://github.com/albertosusco/Calchy.git
+cd Calchy
 npm install
 
 npm run tauri dev      # avvia l'app in modalità sviluppo
 npm test               # verifica il motore di calcolo
 npm run tauri build    # crea l'RPM in src-tauri/target/release/bundle/rpm/
 ```
+
+L'APK per Android viene compilato da GitHub Actions (servono Android SDK, NDK e Java 17).
+La firma usa la chiave salvata nei Secrets del repository (`ANDROID_KEYSTORE`, in base64, e `ANDROID_KEYSTORE_PASSWORD`); senza, l'APK viene firmato con una chiave temporanea e gli aggiornamenti richiedono di disinstallare la versione precedente.
 
 Struttura del progetto:
 
@@ -263,7 +290,7 @@ git tag v1.2.0
 git push origin v1.2.0
 ```
 
-GitHub Actions compila l'RPM su Fedora e lo pubblica automaticamente nella pagina Releases, usando il numero del tag come versione.
+GitHub Actions compila l'RPM su Fedora e l'APK per Android e li pubblica automaticamente nella pagina Releases, usando il numero del tag come versione.
 
 ---
 

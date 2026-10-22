@@ -1,11 +1,14 @@
 use std::{fs, path::PathBuf};
-use tauri::{AppHandle, Manager, WebviewWindow, WindowEvent};
+use tauri::{AppHandle, Manager};
+#[cfg(desktop)]
+use tauri::{WebviewWindow, WindowEvent};
 
-
-/// I file di Calchy stanno in ~/.local/share/io.github.calchy/
-/// Solo questi nomi sono ammessi, così l'interfaccia non può toccare altri file.
+/// I file di Calchy stanno in ~/.local/share/io.github.calchy/ (su Android nella
+/// cartella privata dell'app). Solo questi nomi sono ammessi.
 const ALLOWED_FILES: [&str; 3] = ["note.txt", "notes.md", "settings.json"];
 
+/// Cartella dati letta prima che Tauri parta (serve solo su Linux per scegliere il backend)
+#[cfg(desktop)]
 fn data_dir() -> Option<PathBuf> {
     let base = std::env::var_os("XDG_DATA_HOME")
         .map(PathBuf::from)
@@ -13,18 +16,18 @@ fn data_dir() -> Option<PathBuf> {
     Some(base.join("io.github.calchy"))
 }
 
-fn file_path(name: &str) -> Result<PathBuf, String> {
+fn file_path(app: &AppHandle, name: &str) -> Result<PathBuf, String> {
     if !ALLOWED_FILES.contains(&name) {
         return Err(format!("file non ammesso: {name}"));
     }
-    let dir = data_dir().ok_or("cartella dati non trovata")?;
+    let dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
     fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
     Ok(dir.join(name))
 }
 
 #[tauri::command]
-fn load_file(name: String) -> Result<String, String> {
-    let path = file_path(&name)?;
+fn load_file(app: AppHandle, name: String) -> Result<String, String> {
+    let path = file_path(&app, &name)?;
     if !path.exists() {
         return Ok(String::new());
     }
@@ -32,8 +35,8 @@ fn load_file(name: String) -> Result<String, String> {
 }
 
 #[tauri::command]
-fn save_file(name: String, text: String) -> Result<(), String> {
-    let path = file_path(&name)?;
+fn save_file(app: AppHandle, name: String, text: String) -> Result<(), String> {
+    let path = file_path(&app, &name)?;
     // Scrive prima su un file temporaneo e poi lo rinomina:
     // se il PC si spegne a metà salvataggio, il vecchio testo resta intatto.
     let tmp = path.with_extension("tmp");
@@ -44,6 +47,7 @@ fn save_file(name: String, text: String) -> Result<(), String> {
 /// Su GNOME Wayland le app non possono mettersi "sempre in primo piano" da sole.
 /// Per questo, salvo diversa scelta nelle impostazioni, Calchy gira tramite XWayland,
 /// dove GNOME rispetta il "sempre in primo piano".
+#[cfg(desktop)]
 fn choose_display_backend() {
     if std::env::var_os("GDK_BACKEND").is_some() || std::env::var_os("DISPLAY").is_none() {
         return; // scelta già fatta dall'utente, oppure XWayland non disponibile
@@ -59,9 +63,12 @@ fn choose_display_backend() {
 
 #[tauri::command]
 fn hide_window(app: AppHandle) {
+    #[cfg(desktop)]
     if let Some(window) = main_window(&app) {
         let _ = window.hide();
     }
+    #[cfg(mobile)]
+    let _ = app; // su Android la finestra non si nasconde: ci pensa il tasto Indietro/Home
 }
 
 #[tauri::command]
@@ -69,10 +76,12 @@ fn quit_app(app: AppHandle) {
     app.exit(0);
 }
 
+#[cfg(desktop)]
 fn main_window(app: &AppHandle) -> Option<WebviewWindow> {
     app.get_webview_window("main")
 }
 
+#[cfg(desktop)]
 fn show(window: &WebviewWindow) {
     let _ = window.show();
     let _ = window.unminimize();
@@ -81,6 +90,7 @@ fn show(window: &WebviewWindow) {
 
 /// Richiamata dalla scorciatoia: se Calchy è in primo piano la nasconde,
 /// altrimenti la mostra e le dà il focus.
+#[cfg(desktop)]
 fn toggle(app: &AppHandle) {
     if let Some(window) = main_window(app) {
         let visible = window.is_visible().unwrap_or(false);
@@ -95,6 +105,7 @@ fn toggle(app: &AppHandle) {
 
 /// "calchy --setup-gnome [combinazione]": registra in GNOME la scorciatoia da tastiera
 /// e l'avvio automatico in background. Basta lanciarlo una volta.
+#[cfg(desktop)]
 fn setup_gnome(combo: &str) {
     use std::process::Command;
 
@@ -143,48 +154,55 @@ fn setup_gnome(combo: &str) {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let args: Vec<String> = std::env::args().collect();
-    if let Some(i) = args.iter().position(|a| a == "--setup-gnome") {
-        let combo = args.get(i + 1).map(String::as_str).unwrap_or("<Super><Alt>c");
-        setup_gnome(combo);
-        return;
+    #[cfg(desktop)]
+    {
+        let args: Vec<String> = std::env::args().collect();
+        if let Some(i) = args.iter().position(|a| a == "--setup-gnome") {
+            let combo = args.get(i + 1).map(String::as_str).unwrap_or("<Super><Alt>c");
+            setup_gnome(combo);
+            return;
+        }
+        choose_display_backend();
     }
 
-    choose_display_backend();
+    let builder = tauri::Builder::default().invoke_handler(tauri::generate_handler![
+        load_file,
+        save_file,
+        hide_window,
+        quit_app
+    ]);
 
-    // "calchy --hidden" avvia l'app in background (utile per l'avvio automatico)
-    let start_hidden = std::env::args().any(|a| a == "--hidden");
-
-    tauri::Builder::default()
-        // Una sola istanza: lanciare di nuovo "calchy" mostra/nasconde quella già aperta
-        .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
-            if args.iter().any(|a| a == "--quit") {
-                app.exit(0);
-            } else {
-                toggle(app);
-            }
-        }))
-        .invoke_handler(tauri::generate_handler![
-            load_file,
-            save_file,
-            hide_window,
-            quit_app
-        ])
-        .setup(move |app| {
-            if !start_hidden {
-                if let Some(window) = main_window(app.handle()) {
-                    show(&window);
+    #[cfg(desktop)]
+    let builder = {
+        // "calchy --hidden" avvia l'app in background (utile per l'avvio automatico)
+        let start_hidden = std::env::args().any(|a| a == "--hidden");
+        builder
+            // Una sola istanza: lanciare di nuovo "calchy" mostra/nasconde quella già aperta
+            .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
+                if args.iter().any(|a| a == "--quit") {
+                    app.exit(0);
+                } else {
+                    toggle(app);
                 }
-            }
-            Ok(())
-        })
-        // Chiudere la finestra la nasconde soltanto: Calchy resta pronta in background
-        .on_window_event(|window, event| {
-            if let WindowEvent::CloseRequested { api, .. } = event {
-                api.prevent_close();
-                let _ = window.hide();
-            }
-        })
+            }))
+            .setup(move |app| {
+                if !start_hidden {
+                    if let Some(window) = main_window(app.handle()) {
+                        show(&window);
+                    }
+                }
+                Ok(())
+            })
+            // Chiudere la finestra la nasconde soltanto: Calchy resta pronta in background
+            .on_window_event(|window, event| {
+                if let WindowEvent::CloseRequested { api, .. } = event {
+                    api.prevent_close();
+                    let _ = window.hide();
+                }
+            })
+    };
+
+    builder
         .run(tauri::generate_context!())
         .expect("errore durante l'avvio di Calchy");
 }

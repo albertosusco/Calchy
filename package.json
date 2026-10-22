@@ -1,9 +1,9 @@
 {
   "name": "calchy",
   "private": true,
-  "version": "1.2.1",
+  "version": "1.3.0",
   "type": "module",
-  "description": "Calcolatrice testuale per Linux, ispirata a Numi",
+  "description": "Calcolatrice testuale per Linux e Android, ispirata a Numi",
   "license": "MIT",
   "scripts": {
     "dev": "vite",
