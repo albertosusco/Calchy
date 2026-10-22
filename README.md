@@ -285,12 +285,14 @@ tests/                 test del motore
 
 ### Pubblicare una nuova versione
 
-```bash
-git tag v1.2.0
-git push origin v1.2.0
-```
+1. Aumenta il numero di versione in `src-tauri/tauri.conf.json` (ad esempio da `1.3.0` a `1.3.1`).
+2. Carica la modifica su `main`.
 
-GitHub Actions compila l'RPM su Fedora e l'APK per Android e li pubblica automaticamente nella pagina Releases, usando il numero del tag come versione.
+GitHub Actions si accorge che la versione non è ancora pubblicata, compila l'RPM su Fedora e l'APK per Android e crea da solo la release `v1.3.1`.
+Le modifiche che non cambiano il numero di versione (per esempio al README) non avviano nessuna compilazione.
+Funziona anche il metodo classico: `git tag v1.3.1 && git push origin v1.3.1`.
+
+Dalla scheda **Actions → Release → Run workflow** puoi lanciare una compilazione di prova in qualsiasi momento: produce i file (scaricabili dalla pagina dell'esecuzione) senza pubblicare nulla.
 
 ---
 
