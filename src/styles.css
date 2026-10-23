@@ -114,7 +114,7 @@ main { flex: 1; min-height: 0; position: relative; }
   border-right: 1px solid var(--line);
 }
 /* il gutter ha un carattere più piccolo: le righe restano alte quanto quelle del testo */
-#gutter div { height: var(--row); line-height: var(--backdrop-row, var(--row)); }
+#gutter div { height: var(--row); line-height: var(--row); }
 #gutter div[data-ref] { cursor: pointer; }
 #gutter div[data-ref]:hover { color: var(--result); }
 
@@ -161,8 +161,8 @@ main { flex: 1; min-height: 0; position: relative; }
 
 /* una riga lunga può occupare più righe a schermo: l'altezza di risultati e margine
    viene copiata da main.js su quella della riga di testo corrispondente */
-#backdrop div { min-height: var(--backdrop-row, var(--row)); }
-#results div { height: var(--row); line-height: var(--backdrop-row, var(--row)); }
+#backdrop div { min-height: var(--row); }
+#results div { height: var(--row); }
 #results div[data-copy] { cursor: pointer; }
 #results div[data-copy]:hover { filter: brightness(1.3); }
 

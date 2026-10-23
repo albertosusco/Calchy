@@ -1,6 +1,6 @@
 [package]
 name = "calchy"
-version = "1.4.0"
+version = "1.4.1"
 description = "Calcolatrice testuale per Linux e Android, ispirata a Numi"
 edition = "2021"
 license = "MIT"
@@ -15,6 +15,10 @@ tauri-build = { version = "2", features = [] }
 [dependencies]
 tauri = { version = "2", features = [] }
 serde = { version = "1", features = ["derive"] }
+
+# Solo per Android: per impostare la WebView (zoom del testo)
+[target.'cfg(target_os = "android")'.dependencies]
+jni = "0.21"
 
 # Solo per Linux: su Android non servono
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
