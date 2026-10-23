@@ -93,7 +93,7 @@ I tuoi testi restano in `~/.local/share/io.github.calchy/`: cancella quella cart
 
 Per aggiornare basta installare il nuovo APK sopra il vecchio: i dati restano.
 
-Su Android non ci sono il pulsante "sempre in primo piano", la ✕ e le scorciatoie da tastiera; tutto il resto funziona come su Linux. I dati del telefono sono separati da quelli del computer.
+Su Android non ci sono il pulsante "sempre in primo piano", la ✕ e le scorciatoie da tastiera; tutto il resto funziona come su Linux. Per cambiare tab basta trascinare il dito verso sinistra (Note) o verso destra (Calcoli). I dati del telefono sono separati da quelli del computer.
 
 <br clear="right">
 

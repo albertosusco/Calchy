@@ -6,6 +6,7 @@ const editor = $("editor");
 const backdrop = $("backdrop");
 const results = $("results");
 const gutter = $("gutter");
+const calcView = $("calc-view");
 const mdEditor = $("md-editor");
 const mdPreview = $("md-preview");
 const mdToggle = $("md-toggle");
@@ -93,7 +94,7 @@ function setFontSize(px) {
   settings.fontSize = Math.min(28, Math.max(10, px));
   document.documentElement.style.setProperty("--font-size", `${settings.fontSize}px`);
   saveSettings();
-  alignRows();
+  relayout();
 }
 
 // ---------------------------------------------------------------------------
@@ -156,6 +157,54 @@ function renderCalc() {
   alignRows();
 }
 
+/**
+ * Il testo vero sta nella textarea (invisibile), quello colorato in #backdrop: per
+ * avere cursore e selezione al posto giusto devono avere righe e caratteri identici.
+ * Su alcune WebView Android (dimensione carattere di sistema) non è così, anche se il
+ * CSS è lo stesso: si misurano entrambi e il livello colorato si adatta alla textarea.
+ */
+const LINES = 20;
+const CHARS = 80;
+const sample = Array(LINES).fill("0".repeat(CHARS)).join("\n");
+const probeStyle = "position:absolute;left:0;top:0;visibility:hidden;pointer-events:none;" +
+  "padding:0;border:0;white-space:pre;overflow:hidden;";
+
+function calibrateBackdrop() {
+  if (!editor.offsetWidth) return; // tab nascosto: si misura quando torna visibile
+  const s = backdrop.style;
+  s.removeProperty("font-size");
+  s.removeProperty("line-height");
+  calcView.style.removeProperty("--backdrop-row");
+
+  const ta = document.createElement("textarea");
+  ta.setAttribute("aria-hidden", "true");
+  ta.tabIndex = -1;
+  ta.wrap = "off";
+  ta.style.cssText = probeStyle + "width:1px;height:1px;font:inherit;";
+  const div = document.createElement("div");
+  div.style.cssText = probeStyle + "display:inline-block;";
+  // con le stesse proprietà di carattere della textarea e del livello colorato
+  const cs = getComputedStyle(editor);
+  for (const p of ["fontFamily", "fontSize", "fontWeight", "lineHeight", "letterSpacing", "tabSize"]) ta.style[p] = cs[p];
+  ta.value = sample;
+  div.textContent = sample;
+  editor.parentElement.append(ta);
+  backdrop.append(div);
+
+  const taLine = ta.scrollHeight / LINES;
+  const taChar = ta.scrollWidth / CHARS;
+  const { width, height } = div.getBoundingClientRect();
+  ta.remove();
+  div.remove();
+
+  const ratio = taChar / (width / CHARS);
+  if (Math.abs(ratio - 1) > 0.005) s.fontSize = `${parseFloat(getComputedStyle(backdrop).fontSize) * ratio}px`;
+  if (Math.abs(taLine - height / LINES) > 0.1) {
+    s.lineHeight = `${taLine}px`;
+    calcView.style.setProperty("--backdrop-row", `${taLine}px`);
+  }
+}
+
 /** Allinea risultati e margine alle righe di testo, anche quando una riga va a capo */
 function alignRows() {
   const texts = backdrop.children;
@@ -168,8 +217,15 @@ function alignRows() {
   }
   syncScroll();
 }
+
+/** Ricalibra il livello colorato e riallinea: quando cambiano dimensioni o carattere */
+function relayout() {
+  calibrateBackdrop();
+  alignRows();
+}
 // Se la finestra cambia larghezza, gli a capo cambiano: riallinea
-new ResizeObserver(alignRows).observe(editor);
+new ResizeObserver(relayout).observe(editor);
+document.fonts?.ready.then(relayout);
 
 function syncScroll() {
   backdrop.scrollTop = editor.scrollTop;
@@ -255,7 +311,7 @@ function showTab(tab) {
     renderNotes(); // i richiami potrebbero essere cambiati
     if (!mdEditor.hidden) mdEditor.focus();
   } else {
-    alignRows();
+    relayout();
     if (!isMobile) editor.focus();
   }
 }
@@ -377,6 +433,34 @@ mdToggle.addEventListener("mousedown", (e) => e.preventDefault()); // non far pe
 mdToggle.addEventListener("click", () => setNotesEditing(mdEditor.hidden));
 
 document.querySelectorAll(".tab").forEach((b) => b.addEventListener("click", () => showTab(b.dataset.tab)));
+
+// Swipe orizzontale: verso sinistra si va alle Note, verso destra ai Calcoli
+let swipe = null;
+document.querySelector("main").addEventListener("touchstart", (e) => {
+  const t = e.touches[0];
+  // niente swipe con più dita o dove il contenuto scorre di lato (tabelle, codice)
+  swipe = e.touches.length === 1 && !e.target.closest("pre, table")
+    ? { x: t.clientX, y: t.clientY, time: e.timeStamp } : null;
+}, { passive: true });
+document.querySelector("main").addEventListener("touchend", (e) => {
+  if (!swipe) return;
+  const t = e.changedTouches[0];
+  const dx = t.clientX - swipe.x;
+  const dy = t.clientY - swipe.y;
+  const quick = e.timeStamp - swipe.time < 600;
+  swipe = null;
+  if (!quick || Math.abs(dx) < 60 || Math.abs(dx) < 2 * Math.abs(dy)) return;
+  // trascinando per selezionare del testo non si cambia tab
+  if (editor.selectionStart !== editor.selectionEnd && document.activeElement === editor) return;
+  if (!window.getSelection().isCollapsed && document.activeElement !== editor) return;
+  const target = dx < 0 ? "notes" : "calc";
+  if (target === settings.tab) return;
+  showTab(target);
+  const view = $(target === "calc" ? "calc-view" : "notes-view");
+  view.classList.add(dx < 0 ? "from-right" : "from-left");
+  view.addEventListener("animationend", () => view.classList.remove("from-right", "from-left"), { once: true });
+});
+document.querySelector("main").addEventListener("touchcancel", () => { swipe = null; });
 $("close").addEventListener("click", hideWindow);
 $("pin").addEventListener("click", () => setAlwaysOnTop(!settings.alwaysOnTop));
 $("settings-btn").addEventListener("click", () => openSettings($("settings").hidden));
