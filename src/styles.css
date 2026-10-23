@@ -21,6 +21,9 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 html, body { height: 100%; background: var(--bg); overflow: hidden; }
+/* Android applica la dimensione carattere di sistema in modo diverso a textarea e div:
+   il livello colorato finirebbe sfasato rispetto al cursore e alla selezione */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 
 body {
   font-family: var(--mono);
@@ -82,6 +85,11 @@ body {
 main { flex: 1; min-height: 0; position: relative; }
 .view { position: absolute; inset: 0; display: none; }
 .view.active { display: flex; }
+/* cambio tab con uno swipe: la nuova vista entra dal lato verso cui si trascina */
+.view.from-right { animation: slide-from-right 0.18s ease-out; }
+.view.from-left { animation: slide-from-left 0.18s ease-out; }
+@keyframes slide-from-right { from { transform: translateX(24px); opacity: 0.4; } }
+@keyframes slide-from-left { from { transform: translateX(-24px); opacity: 0.4; } }
 
 /* ---------- Tab Calcoli ---------- */
 #editor, #backdrop, #results, #gutter {
@@ -106,7 +114,7 @@ main { flex: 1; min-height: 0; position: relative; }
   border-right: 1px solid var(--line);
 }
 /* il gutter ha un carattere più piccolo: le righe restano alte quanto quelle del testo */
-#gutter div { height: var(--row); line-height: var(--row); }
+#gutter div { height: var(--row); line-height: var(--backdrop-row, var(--row)); }
 #gutter div[data-ref] { cursor: pointer; }
 #gutter div[data-ref]:hover { color: var(--result); }
 
@@ -153,8 +161,8 @@ main { flex: 1; min-height: 0; position: relative; }
 
 /* una riga lunga può occupare più righe a schermo: l'altezza di risultati e margine
    viene copiata da main.js su quella della riga di testo corrispondente */
-#backdrop div { min-height: var(--row); }
-#results div { height: var(--row); }
+#backdrop div { min-height: var(--backdrop-row, var(--row)); }
+#results div { height: var(--row); line-height: var(--backdrop-row, var(--row)); }
 #results div[data-copy] { cursor: pointer; }
 #results div[data-copy]:hover { filter: brightness(1.3); }
 
