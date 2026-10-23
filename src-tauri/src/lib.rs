@@ -202,6 +202,26 @@ pub fn run() {
             })
     };
 
+    // Android applica alla WebView la dimensione carattere di sistema, ma non allo stesso
+    // modo alla textarea e al testo colorato dietro: cursore e selezione finiscono sfasati.
+    // Calchy ha già A−/A+ nelle impostazioni, quindi lo zoom del testo resta al 100%.
+    #[cfg(target_os = "android")]
+    let builder = builder.setup(|app| {
+        if let Some(window) = app.get_webview_window("main") {
+            let _ = window.with_webview(|webview| {
+                webview.jni_handle().exec(|env, _activity, webview| {
+                    let settings = env
+                        .call_method(webview, "getSettings", "()Landroid/webkit/WebSettings;", &[])
+                        .and_then(|s| s.l());
+                    if let Ok(settings) = settings {
+                        let _ = env.call_method(&settings, "setTextZoom", "(I)V", &[100.into()]);
+                    }
+                });
+            });
+        }
+        Ok(())
+    });
+
     builder
         .run(tauri::generate_context!())
         .expect("errore durante l'avvio di Calchy");
