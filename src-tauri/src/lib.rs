@@ -86,6 +86,28 @@ fn show(window: &WebviewWindow) {
     let _ = window.show();
     let _ = window.unminimize();
     let _ = window.set_focus();
+    #[cfg(target_os = "linux")]
+    present_x11(window);
+}
+
+/// Con XWayland GNOME blocca le finestre che chiedono il primo piano senza un orario
+/// valido (succede quando Calchy, già aperta, viene richiamata dalla scorciatoia):
+/// la finestra resta dietro alle altre. Con l'orario attuale del server X la richiesta
+/// è accettata. Su Wayland nativo non serve.
+#[cfg(target_os = "linux")]
+fn present_x11(window: &WebviewWindow) {
+    use gtk::prelude::*;
+    let window = window.clone();
+    let _ = window.clone().run_on_main_thread(move || {
+        let Ok(gtk_window) = window.gtk_window() else { return };
+        let Some(x11_window) = gtk_window
+            .window()
+            .and_then(|w| w.downcast::<gdkx11::X11Window>().ok())
+        else {
+            return;
+        };
+        gtk_window.present_with_time(gdkx11::functions::x11_get_server_time(&x11_window));
+    });
 }
 
 /// Richiamata dalla scorciatoia: se Calchy è in primo piano la nasconde,
