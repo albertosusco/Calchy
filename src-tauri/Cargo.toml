@@ -1,6 +1,6 @@
 [package]
 name = "calchy"
-version = "1.4.1"
+version = "1.4.2"
 description = "Calcolatrice testuale per Linux e Android, ispirata a Numi"
 edition = "2021"
 license = "MIT"
@@ -23,6 +23,11 @@ jni = "0.21"
 # Solo per Linux: su Android non servono
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-single-instance = "2"
+
+# Solo per Linux: per portare la finestra in primo piano con XWayland
+[target.'cfg(target_os = "linux")'.dependencies]
+gtk = "0.18"
+gdkx11 = "0.18"
 
 [profile.release]
 codegen-units = 1

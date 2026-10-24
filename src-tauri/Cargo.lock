@@ -376,8 +376,10 @@ dependencies = [
 
 [[package]]
 name = "calchy"
-version = "1.4.1"
+version = "1.4.2"
 dependencies = [
+ "gdkx11",
+ "gtk",
  "jni",
  "serde",
  "tauri",
