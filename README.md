@@ -26,7 +26,7 @@ Tutto viene salvato automaticamente, ogni volta che premi un tasto.
 - **Numeri all'italiana**: virgola per i decimali, punto per le migliaia (`1.250,50`). Chi preferisce la notazione anglosassone (`1,250.50`) può attivarla nelle impostazioni.
 - **Richiami tra righe**: ogni calcolo ha un numero (`@1`, `@2`…) che puoi riusare più sotto; se cambi la riga di partenza, tutto si ricalcola.
 - **Note dentro i calcoli**: `20 _mele_ + 30 _pere_` fa 50 e ti ricorda cosa stavi contando.
-- **Tab Note** in markdown, che può mostrare i risultati dei calcoli.
+- **Tutti i tab che vuoi**, di calcolo o di testo in markdown, ognuno col suo nome: uno per argomento. I testi possono mostrare i risultati dei calcoli.
 - **Percentuali, unità di misura, variabili, totali** e funzioni matematiche.
 - **Sempre in primo piano**, temi di colore, scorciatoia globale di GNOME.
 
@@ -93,7 +93,7 @@ I tuoi testi restano in `~/.local/share/io.github.calchy/`: cancella quella cart
 
 Per aggiornare basta installare il nuovo APK sopra il vecchio: i dati restano.
 
-Su Android non ci sono il pulsante "sempre in primo piano", la ✕ e le scorciatoie da tastiera; tutto il resto funziona come su Linux. Per cambiare tab basta trascinare il dito verso sinistra (Note) o verso destra (Calcoli). I dati del telefono sono separati da quelli del computer.
+Su Android non ci sono il pulsante "sempre in primo piano", la ✕ e le scorciatoie da tastiera; tutto il resto funziona come su Linux. Per cambiare tab basta trascinare il dito verso sinistra (tab successivo) o verso destra (tab precedente); le impostazioni sono nella barra in basso, accanto al +. I dati del telefono sono separati da quelli del computer.
 
 <br clear="right">
 
@@ -101,7 +101,7 @@ Su Android non ci sono il pulsante "sempre in primo piano", la ✕ e le scorciat
 
 ## Come si usa
 
-### Tab Calcoli
+### Tab di calcolo
 
 Scrivi una riga alla volta. Se Calchy la riconosce come calcolo, la colora e mostra il risultato nella colonna di destra; altrimenti la lascia come testo normale.
 
@@ -150,7 +150,9 @@ Scrivi `@N` in un'altra riga per riusarne il risultato:
 
 **Clic su un risultato** a destra per copiarlo negli appunti.
 
-### Tab Note
+Dentro un tab di calcolo, `@N` richiama sempre una riga **dello stesso tab**.
+
+### Tab di testo
 
 Un foglio di testo libero in **markdown**, per appunti più lunghi e ordinati:
 
@@ -158,26 +160,38 @@ Un foglio di testo libero in **markdown**, per appunti più lunghi e ordinati:
 # Promemoria
 La frutta costa **@3** a settimana.
 
-- Affitto annuo: @5
-- Con lo sconto: @6
+- Affitto annuo: @5*Casa
+- Con lo sconto: @6*Casa
 ```
 
-Scrivendo `@N` compare il risultato della riga corrispondente del tab Calcoli, sempre aggiornato. Se la riga non esiste, il richiamo appare in rosso.
+Nei tab di testo i richiami mostrano il risultato, sempre aggiornato:
+
+- `@N*Nome` → la riga `@N` del tab di calcolo che si chiama *Nome* (maiuscole e minuscole non contano, il nome può avere spazi: `@2*Spese casa`);
+- `@N` da solo → la riga `@N` del **primo** tab di calcolo della barra.
+
+Se la riga o il tab non esistono, il richiamo appare in rosso. Se rinomini un tab di calcolo, i richiami `@N*Nome` nei testi si aggiornano da soli.
 
 - **Clic sul testo** (o **Ctrl + E**) per modificare.
 - **Esc**, o un clic fuori, per tornare all'anteprima formattata.
 - Supporta titoli (`#`), **grassetto**, *corsivo*, elenchi, citazioni (`>`), tabelle e `codice`.
 
-### Barra superiore
+### I tab
+
+I tab sono nella barra in basso: `=` indica un tab di calcolo, `¶` uno di testo.
+
+- **+** (o **Ctrl + N**) crea un tab nuovo: scegli il nome e se è di **Calcoli** o di **Testo**.
+- **Doppio clic** su un tab (sul telefono: **pressione lunga**) per rinominarlo o eliminarlo. L'eliminazione chiede una conferma.
+- I tab *Calcoli* e *Note* delle versioni precedenti restano, con il loro contenuto.
+
+### Barra superiore (solo computer)
 
 | Pulsante | Funzione |
 |---|---|
-| **Calcoli / Note** | cambia tab |
 | 📌 | sempre in primo piano sì/no |
 | ⚙ | impostazioni |
 | ✕ | nasconde la finestra (Calchy resta pronta in background) |
 
-Trascina la barra per spostare la finestra; trascina i bordi per ridimensionarla.
+A sinistra c'è il nome del tab aperto. Trascina la barra per spostare la finestra; trascina i bordi per ridimensionarla.
 
 ### Impostazioni
 
@@ -204,9 +218,10 @@ Le modifiche si vedono subito e vengono salvate da sole.
 |---|---|
 | **Super + Alt + C** | mostra / nasconde Calchy (dopo `calchy --setup-gnome`) |
 | **Esc** | nasconde la finestra |
-| **Ctrl + 1** / **Ctrl + 2** | tab Calcoli / tab Note |
-| **Ctrl + Tab** | passa da un tab all'altro |
-| **Ctrl + E** | nel tab Note: modifica / anteprima |
+| **Ctrl + 1** … **Ctrl + 9** | apre il primo, secondo… nono tab |
+| **Ctrl + Tab** / **Ctrl + Maiusc + Tab** | tab successivo / precedente |
+| **Ctrl + N** | nuovo tab |
+| **Ctrl + E** | in un tab di testo: modifica / anteprima |
 | **Ctrl + T** | sempre in primo piano sì/no |
 | **Ctrl + +** / **Ctrl + −** / **Ctrl + 0** | ingrandisce / riduce / ripristina il testo |
 | **Ctrl + Q** | chiude davvero Calchy |
@@ -230,6 +245,8 @@ Tutto è salvato in testo semplice in `~/.local/share/io.github.calchy/`:
 |---|---|
 | `note.txt` | il tab Calcoli |
 | `notes.md` | il tab Note |
+| `tab-….txt` / `tab-….md` | i tab che aggiungi (di calcolo / di testo) |
+| `tabs.json` | l'elenco dei tab: nomi, tipo e file di ognuno |
 | `settings.json` | colori e preferenze |
 
 Puoi copiarli per fare un backup o aprirli con qualsiasi editor.

@@ -1,6 +1,6 @@
 [package]
 name = "calchy"
-version = "1.4.2"
+version = "1.5.0"
 description = "Calcolatrice testuale per Linux e Android, ispirata a Numi"
 edition = "2021"
 license = "MIT"
