@@ -50,10 +50,20 @@
         <button id="add-tab" class="icon-btn" title="Nuovo tab (Ctrl+N)">
           <svg viewBox="0 0 16 16"><path d="M7.4 2h1.2v5.4H14v1.2H8.6V14H7.4V8.6H2V7.4h5.4z"/></svg>
         </button>
+        <button id="keypad-on" class="mobile-only" hidden title="Torna al tastierino calcolatrice">123</button>
         <button id="settings-btn-bottom" class="icon-btn mobile-only" title="Impostazioni">
           <svg viewBox="0 0 16 16"><path d="M7 1h2l.4 1.9 1.3.6 1.7-1 1.4 1.4-1 1.7.6 1.3L15 7v2l-1.9.4-.6 1.3 1 1.7-1.4 1.4-1.7-1-1.3.6L9 15H7l-.4-1.9-1.3-.6-1.7 1-1.4-1.4 1-1.7-.6-1.3L1 9V7l1.9-.4.6-1.3-1-1.7 1.4-1.4 1.7 1 1.3-.6zm1 4.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5"/></svg>
         </button>
       </footer>
+
+      <!-- Tastierino calcolatrice (solo telefono, nei tab di calcolo) -->
+      <div id="keypad" hidden>
+        <button data-key="(">(</button><button data-key=")">)</button><button data-key="%">%</button><button data-key="^">^</button><button data-action="back" class="fn" title="Cancella">⌫</button>
+        <button data-key="7">7</button><button data-key="8">8</button><button data-key="9">9</button><button data-key="/" class="op">÷</button><button data-key="@" class="op">@</button>
+        <button data-key="4">4</button><button data-key="5">5</button><button data-key="6">6</button><button data-key="*" class="op">×</button><button data-key="_" class="op">_</button>
+        <button data-key="1">1</button><button data-key="2">2</button><button data-key="3">3</button><button data-key="-" class="op">−</button><button data-key="=" class="op">=</button>
+        <button data-action="abc" class="fn" title="Tastiera completa">ABC</button><button data-key="0">0</button><button data-key="," id="decimal-key">,</button><button data-key="+" class="op">+</button><button data-action="enter" class="fn enter" title="A capo">↵</button>
+      </div>
 
       <!-- Nuovo tab / modifica tab -->
       <div id="tab-dialog" class="overlay" hidden>
@@ -99,7 +109,15 @@
               <button id="font-up" title="Ingrandisci (Ctrl +)">A+</button>
             </div>
           </div>
-          <label class="check desktop-only">
+          <label class="check mobile-only-block">
+            <input type="checkbox" id="keypad-setting" />
+            <span>Tastierino calcolatrice<small>Nei tab di calcolo, al posto della tastiera del telefono compare un tastierino con cifre e operatori; ABC apre la tastiera completa.</small></span>
+          </label>
+          <label class="check windows-only">
+            <input type="checkbox" id="autostart" />
+            <span>Avvia con Windows<small>Calchy parte nascosta all'accesso: Ctrl+Alt+C la mostra.</small></span>
+          </label>
+          <label class="check linux-only">
             <input type="checkbox" id="native-wayland" />
             <span>Wayland nativo<small>Testo più nitido con lo zoom, ma GNOME non permette "sempre in primo piano". Richiede il riavvio di Calchy (Ctrl+Q).</small></span>
           </label>

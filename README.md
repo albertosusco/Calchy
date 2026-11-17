@@ -5,7 +5,7 @@
 <h1 align="center">Calchy</h1>
 
 <p align="center">
-  Un blocco note infinito che fa i calcoli, per Linux (GNOME) e Android.<br>
+  Un blocco note infinito che fa i calcoli, per Linux (GNOME), Windows e Android.<br>
   Ispirato a <a href="https://github.com/nikolaeu/numi">Numi</a>, pensato per chi scrive i numeri all'italiana.
 </p>
 
@@ -34,11 +34,12 @@ Tutto viene salvato automaticamente, ogni volta che premi un tasto.
 
 ## Installazione
 
-Ogni release contiene due file:
+Ogni release contiene tre file:
 
 | File | Per |
 |---|---|
 | `Calchy-x.y.z-1.x86_64.rpm` | Fedora (testata su Fedora 44 con GNOME 50) |
+| `Calchy-x.y.z-windows-setup.exe` | Windows 10 e 11 (64 bit) |
 | `Calchy-x.y.z-android.apk` | telefoni Android 8 o successivi (64 bit) |
 
 ### Fedora
@@ -82,6 +83,20 @@ I tuoi testi restano in `~/.local/share/io.github.calchy/`: cancella quella cart
 
 ---
 
+### Windows
+
+1. Scarica `Calchy-x.y.z-windows-setup.exe` dalla pagina [**Releases**](../../releases/latest) e aprilo.
+2. Se compare *"Windows ha protetto il PC"*, clicca **Ulteriori informazioni → Esegui comunque**: l'installer non è firmato con un certificato a pagamento, quindi Windows non lo conosce.
+3. L'installazione è per il tuo utente e non chiede la password di amministratore. Calchy compare nel menu Start.
+
+**Ctrl + Alt + C** apre e nasconde Calchy da qualsiasi punto, finché Calchy è in esecuzione (anche nascosta). Per averla sempre pronta attiva **Avvia con Windows** nelle impostazioni: partirà nascosta a ogni accesso.
+
+Per aggiornare installa il nuovo setup sopra il vecchio, dopo aver chiuso Calchy con **Ctrl + Q**. I dati sono in `%APPDATA%\io.github.calchy\`.
+
+Su Windows non c'è l'opzione *Wayland nativo*, che riguarda solo Linux; tutto il resto funziona come su Fedora.
+
+---
+
 ### Android
 
 <img src="docs/android.png" width="200" align="right" alt="Calchy su Android">
@@ -93,7 +108,9 @@ I tuoi testi restano in `~/.local/share/io.github.calchy/`: cancella quella cart
 
 Per aggiornare basta installare il nuovo APK sopra il vecchio: i dati restano.
 
-Su Android non ci sono il pulsante "sempre in primo piano", la ✕ e le scorciatoie da tastiera; tutto il resto funziona come su Linux. Per cambiare tab basta trascinare il dito verso sinistra (tab successivo) o verso destra (tab precedente); le impostazioni sono nella barra in basso, accanto al +. I dati del telefono sono separati da quelli del computer.
+Su Android non ci sono il pulsante "sempre in primo piano", la ✕ e le scorciatoie da tastiera; tutto il resto funziona come su Linux.
+
+Nei tab di calcolo, toccando il testo si apre il **tastierino calcolatrice** di Calchy al posto della tastiera del telefono: cifre, virgola, `+ − × ÷`, `( )`, `%`, `^`, `@` per i richiami, `_` per le note, `=` per le variabili, cancella (tenendolo premuto cancella di continuo) e a capo. **ABC** apre la tastiera normale per scrivere testo ed etichette; il tasto **123** nella barra in basso riporta al tastierino. Si può disattivare dalle impostazioni. Per cambiare tab basta trascinare il dito verso sinistra (tab successivo) o verso destra (tab precedente); le impostazioni sono nella barra in basso, accanto al +. I dati del telefono sono separati da quelli del computer.
 
 <br clear="right">
 
@@ -216,7 +233,8 @@ Le modifiche si vedono subito e vengono salvate da sole.
 
 | Tasti | Azione |
 |---|---|
-| **Super + Alt + C** | mostra / nasconde Calchy (dopo `calchy --setup-gnome`) |
+| **Super + Alt + C** | mostra / nasconde Calchy (Linux, dopo `calchy --setup-gnome`) |
+| **Ctrl + Alt + C** | mostra / nasconde Calchy (Windows) |
 | **Esc** | nasconde la finestra |
 | **Ctrl + 1** … **Ctrl + 9** | apre il primo, secondo… nono tab |
 | **Ctrl + Tab** / **Ctrl + Maiusc + Tab** | tab successivo / precedente |

@@ -14,13 +14,15 @@
   --font-size: 15px;
   --line-height: 1.7;
   --row: 26px; /* font-size * line-height arrotondato: lo ricalcola main.js */
-  --mono: "JetBrains Mono", "Fira Code", "Source Code Pro", "Adwaita Mono", monospace;
-  --sans: "Adwaita Sans", "Inter", "Cantarell", system-ui, sans-serif;
+  --mono: "JetBrains Mono", "Fira Code", "Source Code Pro", "Adwaita Mono", "Cascadia Mono", Consolas, monospace;
+  --sans: "Adwaita Sans", "Inter", "Cantarell", "Segoe UI", system-ui, sans-serif;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 html, body { height: 100%; background: var(--bg); overflow: hidden; }
+/* sul computer la finestra è trasparente: si vede solo #app, con gli angoli arrotondati */
+html:not(.mobile), html:not(.mobile) body { background: transparent; }
 /* Android applica la dimensione carattere di sistema in modo diverso a textarea e div:
    il livello colorato finirebbe sfasato rispetto al cursore e alla selezione */
 html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
@@ -39,6 +41,9 @@ body {
   display: flex;
   flex-direction: column;
   border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  overflow: hidden;
+  background: var(--bg);
 }
 
 /* ---------- Barra superiore ---------- */
@@ -103,8 +108,51 @@ body {
 .tab.text::before { content: "¶"; }
 .tab:hover { background: var(--hover); color: var(--text); }
 .tab.active { background: var(--hover); color: var(--calc); }
-.mobile-only { display: none !important; }
+.mobile-only, .mobile-only-block, .windows-only, .linux-only { display: none !important; }
 .mobile .mobile-only { display: grid !important; }
+.mobile .mobile-only[hidden] { display: none !important; }
+.mobile .panel .mobile-only-block { display: flex !important; }
+.windows .panel .windows-only, .linux .panel .linux-only { display: flex !important; }
+
+/* tasto per tornare dalla tastiera completa al tastierino */
+#keypad-on {
+  place-items: center;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--hover);
+  color: var(--calc);
+  font: 700 14px var(--mono);
+}
+
+/* ---------- Tastierino calcolatrice (telefono) ---------- */
+#keypad {
+  flex: none;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+  padding: 8px 6px;
+  background: var(--bar);
+  border-top: 1px solid var(--line);
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
+}
+#keypad[hidden] { display: none; }
+#keypad button {
+  height: 50px;
+  border: none;
+  border-radius: 8px;
+  background: var(--hover);
+  color: var(--text);
+  font: 600 21px var(--mono);
+  -webkit-tap-highlight-color: transparent;
+}
+#keypad button:active, #keypad button.pressed { filter: brightness(1.35); }
+#keypad .op { color: var(--calc); }
+#keypad .fn { background: var(--line); color: var(--text); font-size: 17px; }
+#keypad .enter { background: var(--calc); color: var(--bg); font-size: 22px; }
 
 .icon-btn {
   width: 26px; height: 26px;
@@ -363,6 +411,7 @@ main { flex: 1; min-height: 0; position: relative; }
 .mobile .desktop-only { display: none !important; }
 .mobile #app {
   border: none;
+  border-radius: 0;
   /* spazio per barra di stato e barra di navigazione di Android */
   padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);
