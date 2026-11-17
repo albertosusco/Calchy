@@ -308,6 +308,15 @@ npm run tauri build    # crea l'RPM in src-tauri/target/release/bundle/rpm/
 L'APK per Android viene compilato da GitHub Actions (servono Android SDK, NDK e Java 17).
 La firma usa la chiave salvata nei Secrets del repository (`ANDROID_KEYSTORE`, in base64, e `ANDROID_KEYSTORE_PASSWORD`); senza, l'APK viene firmato con una chiave temporanea e gli aggiornamenti richiedono di disinstallare la versione precedente.
 
+Per creare la chiave fissa (una volta sola, serve Java):
+
+```bash
+keytool -genkeypair -keystore calchy.jks -alias calchy -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Calchy"
+base64 -w0 calchy.jks > calchy.jks.b64
+```
+
+Poi in **Settings → Secrets and variables → Actions** crea `ANDROID_KEYSTORE` con il contenuto di `calchy.jks.b64` e `ANDROID_KEYSTORE_PASSWORD` con la password scelta. Conserva `calchy.jks` al sicuro: se la perdi, per aggiornare bisognerà di nuovo disinstallare.
+
 Struttura del progetto:
 
 ```
