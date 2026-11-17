@@ -4,8 +4,20 @@ use tauri::{AppHandle, Manager};
 use tauri::{WebviewWindow, WindowEvent};
 
 /// I file di Calchy stanno in ~/.local/share/io.github.calchy/ (su Android nella
-/// cartella privata dell'app). Solo questi nomi sono ammessi.
-const ALLOWED_FILES: [&str; 3] = ["note.txt", "notes.md", "settings.json"];
+/// cartella privata dell'app). Sono ammessi solo questi nomi, più i file dei tab
+/// aggiunti dall'utente: tab-<lettere e cifre>.txt / .md
+const ALLOWED_FILES: [&str; 4] = ["note.txt", "notes.md", "settings.json", "tabs.json"];
+
+fn is_allowed(name: &str) -> bool {
+    if ALLOWED_FILES.contains(&name) {
+        return true;
+    }
+    let Some(rest) = name.strip_prefix("tab-") else { return false };
+    let Some((id, ext)) = rest.rsplit_once('.') else { return false };
+    matches!(ext, "txt" | "md")
+        && (1..=32).contains(&id.len())
+        && id.chars().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit())
+}
 
 /// Cartella dati letta prima che Tauri parta (serve solo su Linux per scegliere il backend)
 #[cfg(desktop)]
@@ -17,7 +29,7 @@ fn data_dir() -> Option<PathBuf> {
 }
 
 fn file_path(app: &AppHandle, name: &str) -> Result<PathBuf, String> {
-    if !ALLOWED_FILES.contains(&name) {
+    if !is_allowed(name) {
         return Err(format!("file non ammesso: {name}"));
     }
     let dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
@@ -42,6 +54,19 @@ fn save_file(app: AppHandle, name: String, text: String) -> Result<(), String> {
     let tmp = path.with_extension("tmp");
     fs::write(&tmp, text).map_err(|e| e.to_string())?;
     fs::rename(&tmp, &path).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn delete_file(app: AppHandle, name: String) -> Result<(), String> {
+    // i due file iniziali non si cancellano mai davvero: restano come copia di sicurezza
+    if ALLOWED_FILES.contains(&name.as_str()) {
+        return Ok(());
+    }
+    let path = file_path(&app, &name)?;
+    match fs::remove_file(path) {
+        Err(e) if e.kind() != std::io::ErrorKind::NotFound => Err(e.to_string()),
+        _ => Ok(()),
+    }
 }
 
 /// Su GNOME Wayland le app non possono mettersi "sempre in primo piano" da sole.
@@ -190,6 +215,7 @@ pub fn run() {
     let builder = tauri::Builder::default().invoke_handler(tauri::generate_handler![
         load_file,
         save_file,
+        delete_file,
         hide_window,
         quit_app
     ]);
