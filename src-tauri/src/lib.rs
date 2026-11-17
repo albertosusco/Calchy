@@ -20,7 +20,7 @@ fn is_allowed(name: &str) -> bool {
 }
 
 /// Cartella dati letta prima che Tauri parta (serve solo su Linux per scegliere il backend)
-#[cfg(desktop)]
+#[cfg(target_os = "linux")]
 fn data_dir() -> Option<PathBuf> {
     let base = std::env::var_os("XDG_DATA_HOME")
         .map(PathBuf::from)
@@ -72,7 +72,7 @@ fn delete_file(app: AppHandle, name: String) -> Result<(), String> {
 /// Su GNOME Wayland le app non possono mettersi "sempre in primo piano" da sole.
 /// Per questo, salvo diversa scelta nelle impostazioni, Calchy gira tramite XWayland,
 /// dove GNOME rispetta il "sempre in primo piano".
-#[cfg(desktop)]
+#[cfg(target_os = "linux")]
 fn choose_display_backend() {
     if std::env::var_os("GDK_BACKEND").is_some() || std::env::var_os("DISPLAY").is_none() {
         return; // scelta già fatta dall'utente, oppure XWayland non disponibile
@@ -99,6 +99,55 @@ fn hide_window(app: AppHandle) {
 #[tauri::command]
 fn quit_app(app: AppHandle) {
     app.exit(0);
+}
+
+/// Avvio automatico con Windows (in background): voce "Calchy" nella chiave Run del registro.
+/// Sugli altri sistemi non c'è: su GNOME lo imposta "calchy --setup-gnome".
+#[cfg(windows)]
+const RUN_KEY: &str = r"HKCU\Software\Microsoft\Windows\CurrentVersion\Run";
+
+#[tauri::command]
+fn get_autostart() -> bool {
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x0800_0000; // niente finestra nera del prompt
+        return std::process::Command::new("reg")
+            .args(["query", RUN_KEY, "/v", "Calchy"])
+            .creation_flags(CREATE_NO_WINDOW)
+            .output()
+            .map(|o| o.status.success())
+            .unwrap_or(false);
+    }
+    #[allow(unreachable_code)]
+    false
+}
+
+#[tauri::command]
+fn set_autostart(on: bool) -> Result<(), String> {
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+        let exe = std::env::current_exe().map_err(|e| e.to_string())?;
+        let value = format!("\"{}\" --hidden", exe.display());
+        let args: Vec<&str> = if on {
+            vec!["add", RUN_KEY, "/v", "Calchy", "/t", "REG_SZ", "/d", &value, "/f"]
+        } else {
+            vec!["delete", RUN_KEY, "/v", "Calchy", "/f"]
+        };
+        let out = std::process::Command::new("reg")
+            .args(&args)
+            .creation_flags(CREATE_NO_WINDOW)
+            .output()
+            .map_err(|e| e.to_string())?;
+        return if out.status.success() || !on { Ok(()) } else { Err(String::from_utf8_lossy(&out.stderr).into_owned()) };
+    }
+    #[allow(unreachable_code)]
+    {
+        let _ = on;
+        Err("avvio automatico non disponibile su questo sistema".into())
+    }
 }
 
 #[cfg(desktop)]
@@ -152,7 +201,7 @@ fn toggle(app: &AppHandle) {
 
 /// "calchy --setup-gnome [combinazione]": registra in GNOME la scorciatoia da tastiera
 /// e l'avvio automatico in background. Basta lanciarlo una volta.
-#[cfg(desktop)]
+#[cfg(target_os = "linux")]
 fn setup_gnome(combo: &str) {
     use std::process::Command;
 
@@ -201,7 +250,7 @@ fn setup_gnome(combo: &str) {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    #[cfg(desktop)]
+    #[cfg(target_os = "linux")]
     {
         let args: Vec<String> = std::env::args().collect();
         if let Some(i) = args.iter().position(|a| a == "--setup-gnome") {
@@ -217,8 +266,28 @@ pub fn run() {
         save_file,
         delete_file,
         hide_window,
-        quit_app
+        quit_app,
+        get_autostart,
+        set_autostart
     ]);
+
+    // Su Windows la scorciatoia globale la registra Calchy stessa (su GNOME ci pensa
+    // "calchy --setup-gnome"): Ctrl+Alt+C mostra o nasconde la finestra
+    #[cfg(windows)]
+    let builder = {
+        use tauri_plugin_global_shortcut::{Builder, ShortcutState};
+        builder.plugin(
+            Builder::new()
+                .with_shortcuts(["ctrl+alt+c"])
+                .expect("scorciatoia non valida")
+                .with_handler(|app, _shortcut, event| {
+                    if event.state == ShortcutState::Pressed {
+                        toggle(app);
+                    }
+                })
+                .build(),
+        )
+    };
 
     #[cfg(desktop)]
     let builder = {

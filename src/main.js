@@ -18,7 +18,8 @@ const tabList = $("tabs");
 const inTauri = "__TAURI_INTERNALS__" in window;
 // Su Android niente finestra da spostare, "sempre in primo piano" o scorciatoie globali
 const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
-if (isMobile) document.documentElement.classList.add("mobile");
+const isWindows = /Windows/i.test(navigator.userAgent);
+document.documentElement.classList.add(isMobile ? "mobile" : isWindows ? "windows" : "linux");
 const core = inTauri ? await import("@tauri-apps/api/core") : null;
 const win = inTauri ? (await import("@tauri-apps/api/window")).getCurrentWindow() : null;
 
@@ -60,6 +61,8 @@ const DEFAULTS = {
   nativeWayland: false,
   notation: "eu", // "eu" = 1.234,56 · "en" = 1,234.56
   tab: "calc", // id del tab aperto
+  keypad: true, // telefono: tastierino calcolatrice nei tab di calcolo
+  keypadMode: "123", // "123" = tastierino di Calchy, "abc" = tastiera del telefono
 };
 let settings = structuredClone(DEFAULTS);
 
@@ -373,6 +376,7 @@ function showTab(id, direction = null) {
   const view = $(isCalc ? "calc-view" : "notes-view");
   $("calc-view").classList.toggle("active", isCalc);
   $("notes-view").classList.toggle("active", !isCalc);
+  applyInputMode();
   if (isCalc) {
     if (editor.value !== tab.text) editor.value = tab.text;
     editor.scrollTop = 0;
@@ -538,6 +542,9 @@ tabDialog.addEventListener("click", (e) => { if (e.target === tabDialog) closeTa
 document.querySelectorAll("[data-type]").forEach((b) => b.addEventListener("click", () => setNewType(b.dataset.type)));
 $("add-tab").addEventListener("click", () => openTabDialog());
 
+// Toccare la barra non toglie il focus al testo: il tastierino non si chiude e
+// non sposta la barra mentre il dito la sta toccando
+$("tabbar").addEventListener("pointerdown", (e) => { if (isMobile && e.target.closest("button")) e.preventDefault(); });
 tabList.addEventListener("click", (e) => {
   const id = e.target.closest(".tab")?.dataset.id;
   if (id && id !== current.id) showTab(id, tabs.indexOf(tabById(id)) > tabs.indexOf(current) ? 1 : -1);
@@ -552,6 +559,97 @@ tabList.addEventListener("contextmenu", (e) => {
   if (!id) return;
   e.preventDefault();
   openTabDialog(tabById(id));
+});
+
+// ---------------------------------------------------------------------------
+// Tastierino calcolatrice (telefono, tab di calcolo): il campo di testo resta quello
+// vero, con cursore e selezione; inputmode="none" tiene chiusa la tastiera di Android
+// ---------------------------------------------------------------------------
+const keypad = $("keypad");
+const keypadOn = $("keypad-on");
+const useKeypad = () => isMobile && settings.keypad && current?.type === "calc";
+
+function applyInputMode() {
+  const mode = useKeypad() && settings.keypadMode === "123" ? "none" : "text";
+  if (editor.inputMode !== mode) editor.inputMode = mode;
+  updateKeypad();
+}
+
+function updateKeypad() {
+  const focused = document.activeElement === editor;
+  const open = focused && useKeypad() && settings.keypadMode === "123";
+  if (keypad.hidden === open) {
+    keypad.hidden = !open;
+    if (open) requestAnimationFrame(caretIntoView); // lo spazio per il testo si è ridotto
+  }
+  keypadOn.hidden = !(focused && useKeypad() && settings.keypadMode === "abc");
+}
+
+/** Dopo che il tastierino ha ridotto lo spazio, riporta in vista la riga del cursore */
+function caretIntoView() {
+  const line = editor.value.slice(0, editor.selectionEnd).split("\n").length - 1;
+  const row = backdrop.children[line];
+  if (!row) return;
+  const top = row.offsetTop;
+  const bottom = top + row.offsetHeight;
+  if (bottom > editor.scrollTop + editor.clientHeight) editor.scrollTop = bottom - editor.clientHeight + 8;
+  else if (top < editor.scrollTop) editor.scrollTop = Math.max(0, top - 8);
+}
+
+/** Cambia tastiera: va riaperto il campo perché Android la sostituisca */
+function setKeypadMode(mode) {
+  settings.keypadMode = mode;
+  saveSettings();
+  applyInputMode();
+  editor.blur();
+  setTimeout(() => { editor.focus(); applyInputMode(); }, 50);
+}
+
+let repeat = null;
+function stopRepeat() {
+  clearTimeout(repeat);
+  clearInterval(repeat);
+  repeat = null;
+  keypad.querySelectorAll(".pressed").forEach((b) => b.classList.remove("pressed"));
+}
+
+keypad.addEventListener("pointerdown", (e) => {
+  const b = e.target.closest("button");
+  if (!b) return;
+  e.preventDefault(); // il campo di testo non deve perdere il focus
+  b.classList.add("pressed");
+  const { key, action } = b.dataset;
+  if (key) insertAtCursor(editor, key);
+  else if (action === "enter") insertAtCursor(editor, "\n");
+  else if (action === "abc") setKeypadMode("abc");
+  else if (action === "back") {
+    // tenendo premuto cancella di continuo
+    const del = () => { editor.focus(); document.execCommand("delete"); };
+    del();
+    repeat = setTimeout(() => { repeat = setInterval(del, 60); }, 400);
+  }
+});
+for (const ev of ["pointerup", "pointerleave", "pointercancel"]) keypad.addEventListener(ev, stopRepeat);
+keypad.addEventListener("contextmenu", (e) => e.preventDefault()); // niente menu tenendo premuto
+keypadOn.addEventListener("pointerdown", (e) => { e.preventDefault(); setKeypadMode("123"); });
+editor.addEventListener("focus", updateKeypad);
+editor.addEventListener("blur", () => setTimeout(updateKeypad, 0));
+
+$("keypad-setting").addEventListener("change", (e) => {
+  settings.keypad = e.target.checked;
+  saveSettings();
+  applyInputMode();
+});
+
+// Avvio automatico con Windows (voce nel registro, gestita da Rust)
+$("autostart").addEventListener("change", async (e) => {
+  try {
+    await core?.invoke("set_autostart", { on: e.target.checked });
+    showToast(e.target.checked ? "Calchy partirà con Windows" : "Avvio automatico disattivato");
+  } catch (err) {
+    e.target.checked = !e.target.checked;
+    showToast(`Impossibile: ${err}`);
+  }
 });
 
 // ---------------------------------------------------------------------------
@@ -585,6 +683,9 @@ $("settings").addEventListener("click", (e) => { if (e.target.id === "settings")
 function applyNotation() {
   document.querySelectorAll("[data-notation]").forEach((b) =>
     b.classList.toggle("active", b.dataset.notation === settings.notation));
+  const decimal = settings.notation === "en" ? "." : ",";
+  $("decimal-key").textContent = decimal;
+  $("decimal-key").dataset.key = decimal;
 }
 document.querySelectorAll("[data-notation]").forEach((b) => {
   b.addEventListener("click", () => {
@@ -741,6 +842,8 @@ try {
 applyTheme();
 applyFontSize();
 $("native-wayland").checked = settings.nativeWayland;
+$("keypad-setting").checked = settings.keypad;
+if (isWindows && core) core.invoke("get_autostart").then((on) => { $("autostart").checked = on; });
 applyNotation();
 $("pin").disabled = settings.nativeWayland;
 if (settings.nativeWayland) $("pin").title = "Non disponibile in modalità Wayland nativa (vedi Impostazioni)";
